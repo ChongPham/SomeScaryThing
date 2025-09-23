@@ -1,7 +1,10 @@
 package core
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"strings"
 )
 
 const CRLF string = "\r\n"
@@ -96,63 +99,63 @@ func Decode(data []byte) (interface{}, error) {
 	return res, err
 }
 
-// func encodeString(s string) []byte {
-// 	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(s), s))
-// }
+func encodeString(s string) []byte {
+	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(s), s))
+}
 
-// func encodeStringArray(sa []string) []byte {
-// 	var b []byte
-// 	buf := bytes.NewBuffer(b)
-// 	for _, s := range sa {
-// 		buf.Write(encodeString(s))
-// 	}
-// 	return []byte(fmt.Sprintf("*%d\r\n%s", len(sa), buf.Bytes()))
-// }
+func encodeStringArray(sa []string) []byte {
+	var b []byte
+	buf := bytes.NewBuffer(b)
+	for _, s := range sa {
+		buf.Write(encodeString(s))
+	}
+	return []byte(fmt.Sprintf("*%d\r\n%s", len(sa), buf.Bytes()))
+}
 
 // raw data => RESP format data
-// func Encode(value interface{}, isSimpleString bool) []byte {
-// 	switch v := value.(type) {
-// 	case string:
-// 		if isSimpleString {
-// 			return []byte(fmt.Sprintf("+%s%s", v, CRLF))
-// 		}
-// 		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
-// 	case int64, int32, int16, int8, int:
-// 		return []byte(fmt.Sprintf(":%d\r\n", v))
-// 	case error:
-// 		return []byte(fmt.Sprintf("-%s\r\n", v))
-// 	case []string:
-// 		return encodeStringArray(value.([]string))
-// 	case [][]string:
-// 		var b []byte
-// 		buf := bytes.NewBuffer(b)
-// 		for _, sa := range value.([][]string) {
-// 			buf.Write(encodeStringArray(sa))
-// 		}
-// 		return []byte(fmt.Sprintf("*%d\r\n%s", len(value.([][]string)), buf.Bytes()))
-// 	case []interface{}:
-// 		var b []byte
-// 		buf := bytes.NewBuffer(b)
-// 		for _, x := range value.([]interface{}) {
-// 			buf.Write(Encode(x, false))
-// 		}
-// 		return []byte(fmt.Sprintf("*%d\r\n%s", len(value.([]interface{})), buf.Bytes()))
-// 	default:
-// 		return RespNil
-// 	}
-// }
+func Encode(value interface{}, isSimpleString bool) []byte {
+	switch v := value.(type) {
+	case string:
+		if isSimpleString {
+			return []byte(fmt.Sprintf("+%s%s", v, CRLF))
+		}
+		return []byte(fmt.Sprintf("$%d%s%s%s", len(v), CRLF, v, CRLF))
+	case int64, int32, int16, int8, int:
+		return []byte(fmt.Sprintf(":%d\r\n", v))
+	case error:
+		return []byte(fmt.Sprintf("-%s\r\n", v))
+	case []string:
+		return encodeStringArray(value.([]string))
+	case [][]string:
+		var b []byte
+		buf := bytes.NewBuffer(b)
+		for _, sa := range value.([][]string) {
+			buf.Write(encodeStringArray(sa))
+		}
+		return []byte(fmt.Sprintf("*%d\r\n%s", len(value.([][]string)), buf.Bytes()))
+	case []interface{}:
+		var b []byte
+		buf := bytes.NewBuffer(b)
+		for _, x := range value.([]interface{}) {
+			buf.Write(Encode(x, false))
+		}
+		return []byte(fmt.Sprintf("*%d\r\n%s", len(value.([]interface{})), buf.Bytes()))
+	default:
+		return RespNil
+	}
+}
 
-// func ParseCmd(data []byte) (*Command, error) {
-// 	value, err := Decode(data)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func ParseCmd(data []byte) (*Command, error) {
+	value, err := Decode(data)
+	if err != nil {
+		return nil, err
+	}
 
-// 	array := value.([]interface{})
-// 	tokens := make([]string, len(array))
-// 	for i := range tokens {
-// 		tokens[i] = array[i].(string)
-// 	}
-// 	res := &Command{Cmd: strings.ToUpper(tokens[0]), Args: tokens[1:]}
-// 	return res, nil
-// }
+	array := value.([]interface{})
+	tokens := make([]string, len(array))
+	for i := range tokens {
+		tokens[i] = array[i].(string)
+	}
+	res := &Command{Cmd: strings.ToUpper(tokens[0]), Args: tokens[1:]}
+	return res, nil
+}
